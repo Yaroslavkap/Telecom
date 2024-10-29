@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="/main.css">
+</head>
+<body>
+    <div class="container">
+        <form class="mainForm" id="mainForm">
+            <h1 class="formLabel">Обращение гражданина</h1>
+
+            <div class="inputContainer">
+
+                <input type="text" placeholder="Введите ваше имя" class="formInput" required id="name1"/>
+                <input type="text" placeholder="Введите вашу фамилию" class="formInput" required id="name2"/>
+                <input type="text" placeholder="Введите ваше отчество" class="formInput" required id="name3"/>
+                <input type="tel" placeholder="Телефон с +7" class="formInput" required id="phone" pattern="\+7[0-9]{10}"/>
+                <textarea class="formTextarea" rows="10" placeholder="Введите текст сообщения" required id="message"></textarea>
+
+            </div>
+
+            <div class="buttonContainer">
+                <button type="submit" class="btn">Отправить</button>
+            </div>
+            
+        </form>
+    </div>
+    
+    <script type="module" src="/src/index.js"></script>
+</body>
+</html>
