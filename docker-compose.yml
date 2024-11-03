@@ -1,0 +1,48 @@
+#version: '3'
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8888:8888" 
+
+  rabbitmq:
+      image: rabbitmq:3-management
+      ports:
+        - "5672:5672" 
+        - "15672:15672"
+      environment:
+        RABBITMQ_DEFAULT_USER: guest
+        RABBITMQ_DEFAULT_PASS: guest
+      
+
+  db:
+    build:
+      context: ./db
+    environment:
+      POSTGRES_DB: my_database
+      POSTGRES_USER: my_user
+      POSTGRES_PASSWORD: my_password
+    ports:
+      - "5432:5432"
+    # volumes:
+    #   - db_data:/var/lib/postgresql/data # Хранение данных для сохранности между перезапусками
+
+
+  servicedb:
+    build:
+      context: ./servicedb
+    depends_on:
+      - db
+      - rabbitmq
+    
+    
+      

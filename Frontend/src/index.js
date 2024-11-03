@@ -1,5 +1,28 @@
+const url ='http://localhost:8888/submit'
 
-function formSubmit(e) {
+async function sentData(data) {
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),  
+        });
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
+
+        const res = await response.text();
+        console.log('Добавленное обращение:', res);
+        return res
+    } catch (error) {
+        console.error('Произошла ошибка при добавлении обращения:', error);
+    }
+}
+
+async function formSubmit(e) {
     e.preventDefault()
 
     const name1 = document.getElementById("name1").value
@@ -16,6 +39,7 @@ function formSubmit(e) {
         message
     }
     console.log(messageObj)
+    await sentData(messageObj)
 
     const $form = document.getElementById("mainForm")
     $form.reset()
