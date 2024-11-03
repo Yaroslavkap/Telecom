@@ -34,8 +34,8 @@ services:
       POSTGRES_PASSWORD: my_password
     ports:
       - "5432:5432"
-    # volumes:
-    #   - db_data:/var/lib/postgresql/data # Хранение данных для сохранности между перезапусками
+    volumes:
+      - db_data:/var/lib/postgresql/data # Сохранение
 
 
   servicedb:
@@ -44,6 +44,10 @@ services:
     depends_on:
       - db
       - rabbitmq
+
+
+volumes:
+  db_data:
     
     
       
