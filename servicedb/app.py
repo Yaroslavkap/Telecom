@@ -1,10 +1,13 @@
+import asyncio
 from queue_handler import QueueHandler
 from db_connection import Database
 
-def main():
-    db = Database()
+async def main():
+    db = Database(host="db", database="my_database", user="my_user", password="my_password")
+    await db.connect()
+
     queue = QueueHandler(db)
-    queue.start_listening()
+    await queue.start_listening()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

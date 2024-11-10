@@ -1,20 +1,34 @@
-import pika
+import asyncio
 import json
+import aio_pika
+from aio_pika import connect_robust, IncomingMessage, ExchangeType
 
 class QueueHandler:
     def __init__(self, db):
         self.db = db
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitMQ'))
-        self.channel = self.connection.channel()
-        self.channel.queue_declare(queue='messages_queue')
+        self.connection = None
+        self.channel = None
 
-    def callback(self, ch, method, properties, body):
-        data = json.loads(body)
-        
-        self.db.insert_record(data)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+    async def start_listening(self):
+        try:
+            self.connection = await aio_pika.connect_robust(host='rabbitmq')
+            self.channel = await self.connection.channel()
+            await self.channel.set_qos(prefetch_count=1)
 
-    def start_listening(self):
-        self.channel.basic_consume(queue='messages_queue', on_message_callback=self.callback)
-        print("Ожидание сообщений. Для выхода нажмите CTRL+C")
-        self.channel.start_consuming()
+            await self.channel.declare_queue('messages_queue', durable=True)
+
+            async def on_message(message: IncomingMessage):
+                async with message.process():
+                    data = json.loads(message.body)
+                    await self.db.insert_record(data)
+                    print("Сообщение обработано и записано в базу данных")
+
+            queue = await self.channel.get_queue('messages_queue')
+            await queue.consume(on_message)
+
+            print("Ожидание сообщений. Для выхода нажмите CTRL+C")
+            await asyncio.Future()
+
+        except Exception as e:
+            print("Ошибка при прослушивании очереди:")
+            await self.connection.close()

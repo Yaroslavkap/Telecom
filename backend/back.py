@@ -1,34 +1,19 @@
 import json
+import asyncio
 import tornado.ioloop
 import tornado.web
-import pika
+import aio_pika
 
-# Конфигурация RabbitMQ
-RABBITMQ_HOST = 'localhost'
+
+
+RABBITMQ_HOST = 'rabbitmq'
 QUEUE_NAME = 'messages_queue'
 
-# Функция для отправки сообщения в очередь RabbitMQ
-def send_to_rabbitmq(message):
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitMQ'))
-    # credentials = pika.PlainCredentials('guest', 'guest')
-    # connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', port=5672, credentials=credentials))
-    channel = connection.channel()
-    channel.queue_declare(queue=QUEUE_NAME, durable=False)
-    channel.basic_publish(
-        exchange='',
-        routing_key=QUEUE_NAME,
-        body=json.dumps(message),
-        properties=pika.BasicProperties(delivery_mode=2)
-    )
-    print(" Сообщение отправлено в очередь RabbitMQ")
-    connection.close()
-    #print("Эмуляция отправки сообщения в RabbitMQ:", message)
-
-
-
 class MessageHandler(tornado.web.RequestHandler):
+    def initialize(self, rabbitmq_channel):
+        self.rabbitmq_channel = rabbitmq_channel
+
     def set_default_headers(self):
-        
         self.set_header("Access-Control-Allow-Origin", "*") 
         self.set_header("Access-Control-Allow-Headers", "Content-Type")
         self.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -37,7 +22,7 @@ class MessageHandler(tornado.web.RequestHandler):
         self.set_status(204)
         self.finish()
 
-    def post(self):
+    async def post(self):
         try:
             message = json.loads(self.request.body)
             required_fields = {"name1", "name2", "name3", "phone", "message"}
@@ -46,23 +31,31 @@ class MessageHandler(tornado.web.RequestHandler):
                 self.write({"error": "Missing fields in the request"})
                 return
 
-            send_to_rabbitmq(message)
-            self.write({"status": "Message received and sent to queue"})
+            await self.send_to_rabbitmq(message)
 
         except json.JSONDecodeError:
             self.set_status(400)
             self.write({"error": "Invalid JSON format"})
 
+    async def send_to_rabbitmq(self, message):
+        await self.rabbitmq_channel.default_exchange.publish(
+            aio_pika.Message(body=json.dumps(message).encode()),
+            routing_key=QUEUE_NAME
+        )
+        print("Сообщение отправлено в очередь RabbitMQ(async)")
 
-def make_app():
-    return tornado.web.Application([
-        (r"/submit", MessageHandler),
+
+async def main():
+    connection = await aio_pika.connect_robust(host=RABBITMQ_HOST)
+    channel = await connection.channel()
+    await channel.declare_queue(QUEUE_NAME, durable=True)
+
+    app = tornado.web.Application([
+        (r"/submit", MessageHandler, dict(rabbitmq_channel=channel)),
     ])
+    app.listen(8888)
+    print("Сервер Tornado запущен на http://localhost:8888(async)")
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    app = make_app()
-    app.listen(8888)
-    print("Сервер Tornado запущен на http://localhost:8888")
-    tornado.ioloop.IOLoop.current().start()
-
-
+    asyncio.run(main())
