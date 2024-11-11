@@ -1,5 +1,5 @@
 import asyncpg
-import asyncio
+# import asyncio
 
 class Database:
     def __init__(self, host, database, user, password):

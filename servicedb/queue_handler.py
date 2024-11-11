@@ -1,7 +1,7 @@
 import asyncio
 import json
 import aio_pika
-from aio_pika import connect_robust, IncomingMessage, ExchangeType
+from aio_pika import connect_robust, IncomingMessage
 
 class QueueHandler:
     def __init__(self, db):
@@ -11,7 +11,7 @@ class QueueHandler:
 
     async def start_listening(self):
         try:
-            self.connection = await aio_pika.connect_robust(host='rabbitmq')
+            self.connection = await connect_robust(host='rabbitmq')
             self.channel = await self.connection.channel()
             await self.channel.set_qos(prefetch_count=1)
 
